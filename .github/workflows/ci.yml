@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.12.3"
+
+      - name: fmt check
+        run: tofu fmt -check -recursive
+
+      # Validate every module that has a versions.tf.
+      - name: validate modules
+        run: |
+          set -euo pipefail
+          found=0
+          for dir in $(find modules -name versions.tf -exec dirname {} \; | sort -u); do
+            found=1
+            echo "::group::validate $dir"
+            tofu -chdir="$dir" init -backend=false -input=false
+            tofu -chdir="$dir" validate
+            echo "::endgroup::"
+          done
+          if [ "$found" = "0" ]; then echo "No modules to validate yet."; fi

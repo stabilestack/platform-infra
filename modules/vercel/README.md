@@ -33,14 +33,19 @@ committed.
 
 ## Validation status
 
-⚠ **Authored against provider `vercel/vercel ~> 5.0` (5.3.0 latest at authoring),
-but not yet `terraform validate`d** — terraform/OpenTofu isn't installed in the
-authoring environment. Before the first real apply: install terraform, run
-`terraform init && terraform validate` here, and confirm the `vercel_project` /
-`vercel_project_domain` / `vercel_project_environment_variable` schemas against
-the v5 provider docs (the framework-based provider changed several attributes
-from earlier majors). CI gains a `terraform validate` step when the apply path
-lands.
+✓ **`tofu validate` + `tofu fmt` clean** against provider `vercel/vercel ~> 5.0`
+(5.3.0), OpenTofu 1.12.3. Validation against the real v5 schema corrected two
+things from the first draft:
+
+- Environment variables use the **plural** `vercel_project_environment_variables`
+  resource (a set of `{ key, value, sensitive, target }` objects) rather than a
+  `for_each` over a sensitive map — v5 makes `sensitive` a required per-variable
+  field, and a sensitive map can't be a `for_each` source.
+- `git_repository` is a nested **attribute** (`{ type, repo, ... }`), not a block.
+
+Still to confirm at first real `apply` (needs a `VERCEL_API_TOKEN`): the actual
+create against the Vercel API. `plan`/`apply` is not yet exercised — only the
+config is validated.
 
 ## Manual apply (when tokens exist)
 

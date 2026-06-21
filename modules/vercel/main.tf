@@ -18,23 +18,37 @@ resource "vercel_project_domain" "managed" {
   domain     = var.managed_domain
 }
 
-resource "vercel_project_environment_variable" "plain" {
-  for_each = var.environment
+locals {
+  env_targets = ["production", "preview", "development"]
 
-  team_id    = var.team_id
-  project_id = vercel_project.this.id
-  key        = each.key
-  value      = each.value
-  target     = ["production", "preview", "development"]
+  plain_vars = [
+    for k, v in var.environment : {
+      key       = k
+      value     = v
+      sensitive = false
+      target    = local.env_targets
+    }
+  ]
+
+  sensitive_vars = [
+    for k, v in var.sensitive_environment : {
+      key       = k
+      value     = v
+      sensitive = true
+      target    = local.env_targets
+    }
+  ]
+
+  all_env = concat(local.plain_vars, local.sensitive_vars)
 }
 
-resource "vercel_project_environment_variable" "sensitive" {
-  for_each = var.sensitive_environment
+# v5 plural resource: one resource holding a set of variable objects, each with
+# its own `sensitive` flag. Avoids for_each over a sensitive map (the provider
+# redacts `value` regardless), and `sensitive` being a required per-var field.
+resource "vercel_project_environment_variables" "this" {
+  count = length(local.all_env) > 0 ? 1 : 0
 
   team_id    = var.team_id
   project_id = vercel_project.this.id
-  key        = each.key
-  value      = each.value
-  sensitive  = true
-  target     = ["production", "preview", "development"]
+  variables  = local.all_env
 }
