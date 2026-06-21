@@ -6,13 +6,19 @@ in managed mode (~4 min), with per-project state under `~/.platform-tfstate/<nam
 
 ## Status
 
-**Phase 1: structure only.** The Terraform modules are built in **Phase 2**, in
-priority order:
+**Phase 2 in progress.** Module build order:
 
-1. Vercel, Datadog, Sentry — the three best-supported providers, built first to
-   de-risk the approach (Week 2).
+1. **Vercel** ✓ authored (`modules/vercel/`, provider `~> 5.0`) — not yet
+   `terraform validate`d (terraform not installed in the authoring env; see the
+   module README's validation-status note). Datadog, Sentry next — the three
+   best-supported providers, built first to de-risk the approach (Week 2).
 2. Supabase, Stripe (test), Resend, PostHog, Inngest, GitHub — the remaining six
    (Week 3).
+
+The `@stabile/cli` provision step is terraform-aware: it detects a
+terraform/opentofu binary and the presence of a vendor's module, and reports
+readiness per vendor. Actual `plan`/`apply` execution lands behind a `--apply`
+flag once vendor tokens exist.
 
 **Clerk is intentionally not a Terraform module** — it has no public Management API
 for app creation. The managed-auth pattern reuses shared per-env Clerk apps whose
