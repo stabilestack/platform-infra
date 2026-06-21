@@ -8,10 +8,10 @@ in managed mode (~4 min), with per-project state under `~/.platform-tfstate/<nam
 
 **Phase 2 in progress.** Module build order:
 
-1. **Vercel** ✓ authored (`modules/vercel/`, provider `~> 5.0`) — not yet
-   `terraform validate`d (terraform not installed in the authoring env; see the
-   module README's validation-status note). Datadog, Sentry next — the three
-   best-supported providers, built first to de-risk the approach (Week 2).
+1. **Vercel** ✓, **Datadog** ✓, **Sentry** ✓ — the three de-risk modules, all
+   `tofu validate` + `tofu fmt` clean (OpenTofu 1.12.3). `plan`/`apply` not yet
+   exercised (needs vendor tokens). See each module's README for provider pin +
+   validation status.
 2. Supabase, Stripe (test), Resend, PostHog, Inngest, GitHub — the remaining six
    (Week 3).
 
