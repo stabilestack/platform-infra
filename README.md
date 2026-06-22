@@ -8,17 +8,30 @@ in managed mode (~4 min), with per-project state under `~/.platform-tfstate/<nam
 
 **Phase 2 in progress.** Module build order:
 
-1. **Vercel** ✓, **Datadog** ✓, **Sentry** ✓ — the three de-risk modules, all
-   `tofu validate` + `tofu fmt` clean (OpenTofu 1.12.3). `plan`/`apply` not yet
-   exercised (needs vendor tokens). See each module's README for provider pin +
-   validation status.
-2. Supabase, Stripe (test), Resend, PostHog, Inngest, GitHub — the remaining six
-   (Week 3).
+Six vendors have Terraform modules (all `tofu validate` + `tofu fmt` clean,
+OpenTofu 1.12.3); three provision via API instead (see
+[`docs/api-provisioning.md`](docs/api-provisioning.md)).
+
+| Vendor | Module | Provider |
+|---|---|---|
+| Vercel | `modules/vercel` | `vercel/vercel ~> 5.0` |
+| Datadog | `modules/datadog` | `DataDog/datadog ~> 4.0` |
+| Sentry | `modules/sentry` | `jianyuan/sentry ~> 0.15` |
+| GitHub | `modules/github` | `integrations/github ~> 6.0` |
+| Supabase | `modules/supabase` | `supabase/supabase ~> 1.0` |
+| PostHog | `modules/posthog` | `PostHog/posthog ~> 1.0` |
+| Stripe | — (API) | unmaintained TF providers; use the Stripe API |
+| Resend | — (API) | no real TF provider |
+| Inngest | — (API) | no TF provider |
+
+`plan`/`apply` is not yet exercised against any provider (needs vendor tokens).
+See each module's README for its validation status.
 
 The `@stabile/cli` provision step is terraform-aware: it detects a
-terraform/opentofu binary and the presence of a vendor's module, and reports
-readiness per vendor. Actual `plan`/`apply` execution lands behind a `--apply`
-flag once vendor tokens exist.
+terraform/opentofu binary + each vendor's module and runs `tofu init` + `plan`
+(`--plan`) or `apply` (`--apply`) with per-project state at
+`~/.platform-tfstate/<app>/<vendor>/`. Sensitive inputs are passed via `TF_VAR_*`
+env (never argv). Default (no flag) is a non-executing readiness report.
 
 **Clerk is intentionally not a Terraform module** — it has no public Management API
 for app creation. The managed-auth pattern reuses shared per-env Clerk apps whose
