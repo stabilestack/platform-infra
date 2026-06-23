@@ -19,7 +19,9 @@ resource "vercel_project_domain" "managed" {
 }
 
 locals {
-  env_targets = ["production", "preview", "development"]
+  # `development` is intentionally excluded — Vercel rejects sensitive vars on the
+  # development target, and dev values live in local .env.local, not Vercel.
+  env_targets = ["production", "preview"]
 
   plain_vars = [
     for k, v in var.environment : {
