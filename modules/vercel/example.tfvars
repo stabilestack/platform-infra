@@ -19,6 +19,24 @@ environment = {
 
 # Pass sensitive values via -var or a gitignored *.auto.tfvars, never committed:
 # sensitive_environment = {
-#   CLERK_SECRET_KEY = "sk_live_…"
-#   STRIPE_SECRET_KEY = "sk_test_…"
+#   STRIPE_SECRET_KEY = "sk_test_…"   # identical across tiers → both targets
+# }
+
+# Production tier (STA-2): per-scope maps target ONE Vercel environment. The CLI
+# emits these from the tier-keyed inputs — prod credentials to `production`, the
+# shared autopush credentials to `preview`.
+# production_environment = {
+#   STABILE_PROFILE               = "production"
+#   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_…prod app…"
+# }
+# production_sensitive_environment = {
+#   CLERK_SECRET_KEY = "sk_live_…prod app…"
+#   DATABASE_URL     = "postgres://…prod supabase…"
+# }
+# preview_environment = {
+#   STABILE_PROFILE               = "autopush"
+#   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_…autopush app…"
+# }
+# preview_sensitive_environment = {
+#   CLERK_SECRET_KEY = "sk_live_…autopush app…"
 # }

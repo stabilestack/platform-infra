@@ -18,8 +18,17 @@ order: github → **vercel** → …), with per-project state at
 | `git_repository` | no | `null` | `{ type, repo }`, e.g. `{ type="github", repo="stabilestack/<name>" }` |
 | `root_directory` | no | `null` | monorepo app dir, e.g. `apps/web` |
 | `managed_domain` | no | `null` | `<name>.platform.stabilestack.com`; null in portable mode |
-| `environment` | no | `{}` | plain env vars (all targets) |
-| `sensitive_environment` | no | `{}` | redacted env vars (all targets) |
+| `environment` | no | `{}` | plain env vars (both targets) |
+| `sensitive_environment` | no | `{}` | redacted env vars (both targets) |
+| `production_environment` | no | `{}` | plain env vars, `production` target only |
+| `production_sensitive_environment` | no | `{}` | redacted env vars, `production` target only |
+| `preview_environment` | no | `{}` | plain env vars, `preview` target only |
+| `preview_sensitive_environment` | no | `{}` | redacted env vars, `preview` target only |
+
+The per-scope maps back the **production tier** (STA-2): the `production`
+deployment gets prod credentials (Clerk prod app, prod Supabase, `STABILE_PROFILE=production`)
+while `preview`/autopush deployments keep the shared autopush credentials. Vars
+identical across tiers stay in `environment` / `sensitive_environment`.
 
 ## Outputs
 
