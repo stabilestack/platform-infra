@@ -41,13 +41,43 @@ variable "managed_domain" {
 }
 
 variable "environment" {
-  description = "Plain (non-sensitive) environment variables, applied to all targets."
+  description = "Plain (non-sensitive) environment variables, applied to BOTH targets (production + preview)."
   type        = map(string)
   default     = {}
 }
 
 variable "sensitive_environment" {
-  description = "Sensitive environment variables (redacted in plan/state output)."
+  description = "Sensitive environment variables applied to BOTH targets (redacted in plan/state output)."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+# Per-scope env (STA-2 production tier). A var set here targets ONE Vercel
+# environment, letting the production deployment use prod credentials (Clerk
+# prod app, prod Supabase) while preview/autopush deployments use the shared
+# autopush credentials.
+variable "production_environment" {
+  description = "Plain env vars applied to the `production` target only."
+  type        = map(string)
+  default     = {}
+}
+
+variable "production_sensitive_environment" {
+  description = "Sensitive env vars applied to the `production` target only (redacted)."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "preview_environment" {
+  description = "Plain env vars applied to the `preview` target only."
+  type        = map(string)
+  default     = {}
+}
+
+variable "preview_sensitive_environment" {
+  description = "Sensitive env vars applied to the `preview` target only (redacted)."
   type        = map(string)
   default     = {}
   sensitive   = true

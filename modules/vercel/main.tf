@@ -21,27 +21,42 @@ resource "vercel_project_domain" "managed" {
 locals {
   # `development` is intentionally excluded — Vercel rejects sensitive vars on the
   # development target, and dev values live in local .env.local, not Vercel.
-  env_targets = ["production", "preview"]
+  both_targets   = ["production", "preview"]
+  prod_target    = ["production"]
+  preview_target = ["preview"]
 
-  plain_vars = [
-    for k, v in var.environment : {
-      key       = k
-      value     = v
-      sensitive = false
-      target    = local.env_targets
+  # Per-scope env lets a var target ONE Vercel environment — the basis for the
+  # production tier (STA-2): prod Clerk keys + STABILE_PROFILE=production +
+  # prod DATABASE_URL go to `production` only, while the shared autopush keys go
+  # to `preview` only. Vars that are identical across tiers stay in the shared
+  # `environment` / `sensitive_environment` maps (both targets).
+  scoped = {
+    both = {
+      plain     = { vars = var.environment, sensitive = false, target = local.both_targets }
+      sensitive = { vars = var.sensitive_environment, sensitive = true, target = local.both_targets }
     }
-  ]
-
-  sensitive_vars = [
-    for k, v in var.sensitive_environment : {
-      key       = k
-      value     = v
-      sensitive = true
-      target    = local.env_targets
+    prod = {
+      plain     = { vars = var.production_environment, sensitive = false, target = local.prod_target }
+      sensitive = { vars = var.production_sensitive_environment, sensitive = true, target = local.prod_target }
     }
-  ]
+    preview = {
+      plain     = { vars = var.preview_environment, sensitive = false, target = local.preview_target }
+      sensitive = { vars = var.preview_sensitive_environment, sensitive = true, target = local.preview_target }
+    }
+  }
 
-  all_env = concat(local.plain_vars, local.sensitive_vars)
+  all_env = flatten([
+    for group in local.scoped : [
+      for kind in group : [
+        for k, v in kind.vars : {
+          key       = k
+          value     = v
+          sensitive = kind.sensitive
+          target    = kind.target
+        }
+      ]
+    ]
+  ])
 }
 
 # v5 plural resource: one resource holding a set of variable objects, each with
