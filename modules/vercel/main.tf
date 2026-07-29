@@ -28,6 +28,18 @@ resource "vercel_project_domain" "extra" {
   domain     = each.value
 }
 
+# The autopush tier's stable hostname. `git_branch` is the whole point: a domain
+# without it attaches to the project and follows PRODUCTION, which would alias
+# staging onto the live deployment and quietly undo the split.
+resource "vercel_project_domain" "autopush" {
+  count = var.autopush_domain == null ? 0 : 1
+
+  team_id    = var.team_id
+  project_id = vercel_project.this.id
+  domain     = var.autopush_domain
+  git_branch = var.autopush_branch
+}
+
 locals {
   # `development` is intentionally excluded — Vercel rejects sensitive vars on the
   # development target, and dev values live in local .env.local, not Vercel.

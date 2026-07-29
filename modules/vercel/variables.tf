@@ -20,10 +20,26 @@ variable "framework" {
 }
 
 variable "git_repository" {
-  description = "Git repo to connect, e.g. { type = \"github\", repo = \"stabilestack/<name>\" }. Null to leave unconnected."
+  description = <<-EOT
+    Git repo to connect, e.g. { type = "github", repo = "stabilestack/<name>" }.
+    Null to leave unconnected.
+
+    `production_branch` is what makes production a DELIBERATE act. Left null,
+    Vercel treats the default branch as production, so every merge to `main`
+    rebuilds and re-aliases the live domain — there is no tier between a merged
+    PR and the customer. Point it at a branch nobody merges into (`production`)
+    and `main` becomes a preview/autopush deploy instead; promoting is then an
+    explicit push to that branch, from a commit that has already soaked.
+
+    Only meaningful once the app has a production tier to promote INTO (a prod
+    Clerk app + prod Supabase). Before that both scopes hold the same autopush
+    credentials, so splitting the branches would buy a second URL and nothing
+    else — see the CLI's `prodTierActive` gate.
+  EOT
   type = object({
-    type = string
-    repo = string
+    type              = string
+    repo              = string
+    production_branch = optional(string)
   })
   default = null
 }
@@ -52,6 +68,28 @@ variable "managed_domain" {
   description = "Managed-mode subdomain to attach, e.g. \"<name>.platform.stabilestack.com\". Null to skip (portable mode brings its own domain)."
   type        = string
   default     = null
+}
+
+variable "autopush_domain" {
+  description = <<-EOT
+    Stable hostname for the autopush tier, e.g. "autopush.mannagame.com". Null to
+    skip.
+
+    Bound to `autopush_branch` rather than to the project, so it always serves
+    that branch's latest PREVIEW deployment — which is where the autopush
+    credentials live (preview scope = autopush Clerk app + autopush Supabase).
+    Without it the tier still exists but only at Vercel's per-deployment URLs,
+    which change every push: nothing to bookmark, nothing to point a smoke test
+    at, and no way to ask someone to "check staging".
+  EOT
+  type        = string
+  default     = null
+}
+
+variable "autopush_branch" {
+  description = "Branch the autopush domain follows. The default branch, since that is what merges land on once production has moved to its own branch."
+  type        = string
+  default     = "main"
 }
 
 variable "environment" {
