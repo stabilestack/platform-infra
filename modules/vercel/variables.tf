@@ -34,6 +34,20 @@ variable "root_directory" {
   default     = null
 }
 
+variable "domains" {
+  description = <<-EOT
+    Additional domains to attach, e.g. ["mannagame.com", "www.mannagame.com"].
+
+    Separate from `managed_domain` on purpose. That one is a single nullable
+    string and existing apps hold state at `vercel_project_domain.managed[0]`;
+    turning it into a list would force a state move on every app already using it
+    for no benefit to them. This is the escape hatch for an app that brings its
+    own domain, which is every consumer product.
+  EOT
+  type        = list(string)
+  default     = []
+}
+
 variable "managed_domain" {
   description = "Managed-mode subdomain to attach, e.g. \"<name>.platform.stabilestack.com\". Null to skip (portable mode brings its own domain)."
   type        = string
