@@ -18,6 +18,16 @@ resource "vercel_project_domain" "managed" {
   domain     = var.managed_domain
 }
 
+# Domains the app brings itself. Keyed by name so adding or removing one never
+# reshuffles the others, which an index-keyed list would.
+resource "vercel_project_domain" "extra" {
+  for_each = toset(var.domains)
+
+  team_id    = var.team_id
+  project_id = vercel_project.this.id
+  domain     = each.value
+}
+
 locals {
   # `development` is intentionally excluded — Vercel rejects sensitive vars on the
   # development target, and dev values live in local .env.local, not Vercel.
