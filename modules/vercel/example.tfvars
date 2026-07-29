@@ -22,6 +22,12 @@ managed_domain = "inbox-hero.platform.stabilestack.com"
 # single wildcard record and a wildcard matches one label.
 # autopush_domain = "autopush.inboxhero.com"
 
+# Issue a Deployment Protection bypass token so CI can probe the autopush tier
+# (preview deployments 302 to a Vercel SSO login without it). Project-wide — it
+# unlocks PR previews too. Read the value from the `automation_bypass_secret`
+# output; never supply one.
+# automation_bypass = true
+
 environment = {
   NEXT_PUBLIC_CLERK_SIGN_IN_URL = "/sign-in"
   NEXT_PUBLIC_CLERK_SIGN_UP_URL = "/sign-up"

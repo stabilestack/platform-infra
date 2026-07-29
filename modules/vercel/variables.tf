@@ -92,6 +92,23 @@ variable "autopush_branch" {
   default     = "main"
 }
 
+variable "automation_bypass" {
+  description = <<-EOT
+    Issue an automation bypass token for Deployment Protection.
+
+    Needed to probe the autopush tier from CI: Vercel guards preview deployments
+    behind an SSO login, so an unauthenticated request gets a 302 to
+    vercel.com/sso-api and a naive smoke check reads that as a healthy site. With
+    the token, automation sends `x-vercel-protection-bypass` and gets the app.
+
+    Off by default because the token is **project-wide** — it unlocks every
+    protected deployment, PR previews included, not just the autopush hostname.
+    Turn it on when something is actually going to use it.
+  EOT
+  type        = bool
+  default     = false
+}
+
 variable "environment" {
   description = "Plain (non-sensitive) environment variables, applied to BOTH targets (production + preview)."
   type        = map(string)

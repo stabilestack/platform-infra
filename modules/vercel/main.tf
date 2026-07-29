@@ -40,6 +40,26 @@ resource "vercel_project_domain" "autopush" {
   git_branch = var.autopush_branch
 }
 
+# Lets automation reach a protected deployment via the `x-vercel-protection-bypass`
+# header. Vercel guards every preview deployment behind an SSO login, which is
+# right for a human sharing a link and fatal for a probe: the autopush tier answers
+# 302 to vercel.com/sso-api, so a smoke check would grade a redirect as a live site.
+#
+# `secret` is deliberately left computed — Vercel generates it. Supplying one would
+# reintroduce the shape that took mannagame.com down (an optional input mirrored by
+# an output, where the output can drift from what the resource actually holds).
+#
+# NOT scoped to one domain: this unlocks every protected deployment on the project,
+# PR previews included. That is the grain Vercel offers.
+resource "vercel_project_protection_bypass" "automation" {
+  count = var.automation_bypass ? 1 : 0
+
+  team_id    = var.team_id
+  project_id = vercel_project.this.id
+  is_env_var = true
+  note       = "automation — post-deploy smoke"
+}
+
 locals {
   # `development` is intentionally excluded — Vercel rejects sensitive vars on the
   # development target, and dev values live in local .env.local, not Vercel.
