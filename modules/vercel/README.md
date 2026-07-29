@@ -15,9 +15,12 @@ order: github → **vercel** → …), with per-project state at
 | `name` | yes | — | kebab-case project name |
 | `team_id` | yes | — | platform team in managed mode |
 | `framework` | no | `nextjs` | Vercel framework preset |
-| `git_repository` | no | `null` | `{ type, repo }`, e.g. `{ type="github", repo="stabilestack/<name>" }` |
+| `git_repository` | no | `null` | `{ type, repo, production_branch? }`, e.g. `{ type="github", repo="stabilestack/<name>" }` |
 | `root_directory` | no | `null` | monorepo app dir, e.g. `apps/web` |
 | `managed_domain` | no | `null` | `<name>.platform.stabilestack.com`; null in portable mode |
+| `autopush_domain` | no | `null` | stable hostname for the autopush tier, e.g. `autopush.mannagame.com` |
+| `autopush_branch` | no | `main` | branch the autopush domain follows |
+| `automation_bypass` | no | `false` | issue a Deployment Protection bypass token for CI probes |
 | `environment` | no | `{}` | plain env vars (both targets) |
 | `sensitive_environment` | no | `{}` | redacted env vars (both targets) |
 | `production_environment` | no | `{}` | plain env vars, `production` target only |
@@ -30,9 +33,33 @@ deployment gets prod credentials (Clerk prod app, prod Supabase, `STABILE_PROFIL
 while `preview`/autopush deployments keep the shared autopush credentials. Vars
 identical across tiers stay in `environment` / `sensitive_environment`.
 
+`production_branch` + `autopush_domain` make those two scopes two separate
+**places**. Without them Vercel treats the default branch as production and
+auto-assigns the live domain, so a merged PR is in front of customers a minute
+later and the preview scope has no address anyone can remember. Set
+`production_branch = "production"` and `main` becomes the autopush deploy;
+promoting is then `git push origin main:production`.
+
+`autopush_domain` must be bound to a branch — that is why it is its own resource
+rather than another entry in `domains`. A project-level domain follows
+*production*, which would alias staging onto the live deployment and silently
+undo the split.
+
+`automation_bypass` exists because the autopush tier is a **preview** deployment,
+and Vercel guards those behind an SSO login. An unauthenticated request gets a
+302 to `vercel.com/sso-api`, so a smoke check that only asserts "responded"
+grades a login redirect as a healthy site. With the token, automation sends
+`x-vercel-protection-bypass: <secret>` and gets the app. The secret is read from
+`automation_bypass_secret` (computed by Vercel, never supplied).
+
+Off by default: the token is **project-wide**. It unlocks every protected
+deployment on the project, PR previews included — not just the autopush
+hostname. That is the only grain Vercel offers.
+
 ## Outputs
 
-`project_id`, `project_name`, `managed_domain`.
+`project_id`, `project_name`, `managed_domain`, `domains`, `autopush_domain`, and
+`automation_bypass_secret` (sensitive; null unless `automation_bypass = true`).
 
 ## Auth
 

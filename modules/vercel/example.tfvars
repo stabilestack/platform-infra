@@ -7,10 +7,26 @@ team_id = "team_xxxxxxxxxxxxxxxxxxxx"
 git_repository = {
   type = "github"
   repo = "stabilestack/inbox-hero"
+
+  # Omit until the app graduates. Once set, `main` deploys to autopush and the
+  # live domain only moves on `git push origin main:production`.
+  # production_branch = "production"
 }
 
 root_directory = "apps/web"
 managed_domain = "inbox-hero.platform.stabilestack.com"
+
+# The autopush tier's stable hostname, bound to `autopush_branch` (default main).
+# `autopush.<app domain>`, or `<name>-autopush.platform.stabilestack.com` for an
+# app with no domain of its own — flat, because *.platform.stabilestack.com is a
+# single wildcard record and a wildcard matches one label.
+# autopush_domain = "autopush.inboxhero.com"
+
+# Issue a Deployment Protection bypass token so CI can probe the autopush tier
+# (preview deployments 302 to a Vercel SSO login without it). Project-wide — it
+# unlocks PR previews too. Read the value from the `automation_bypass_secret`
+# output; never supply one.
+# automation_bypass = true
 
 environment = {
   NEXT_PUBLIC_CLERK_SIGN_IN_URL = "/sign-in"
