@@ -17,6 +17,17 @@ override.tf.json
 .env.*
 !.env.example
 
+# agent session worktrees + env cache. The harness creates a worktree per session
+# INSIDE the repo, so without this every session shows up as an untracked
+# directory, and a `git add -A` from the repo root would try to commit a checkout
+# of the repo into itself. Neither path exists here yet — both rules are
+# preventive, and the env cache especially: this is the repo that handles
+# credentials, so an accidentally committed cache is the expensive kind of
+# mistake. platform, platform-starter and manna all carry both.
+.claude/env/*
+!.claude/env/.gitkeep
+.claude/worktrees/
+
 # os
 .DS_Store
 
