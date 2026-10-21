@@ -56,11 +56,19 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_ACCESS_KEY }}
       TF_VAR_probe_datadog_api_key: ${{ secrets.PROBE_DATADOG_API_KEY }}
       TF_VAR_probe_request_headers: ${{ secrets.PROBE_REQUEST_HEADERS || '{}' }}
+      PLATFORM_INFRA_READ_TOKEN: ${{ secrets.PLATFORM_INFRA_READ_TOKEN }}
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
       - uses: actions/checkout@v4
+
+      # Module sources in this private org (github.com/stabilestack/platform-infra//modules/...)
+      # are git fetches; the job's GITHUB_TOKEN can't read another private repo.
+      - name: git credentials for private module sources
+        if: env.PLATFORM_INFRA_READ_TOKEN != ''
+        run: git config --global url."https://x-access-token:${PLATFORM_INFRA_READ_TOKEN}@github.com/stabilestack/".insteadOf "https://github.com/stabilestack/"
+
       - uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: ${{ inputs.tofu-version }}
@@ -140,6 +148,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_ACCESS_KEY }}
       TF_VAR_probe_datadog_api_key: ${{ secrets.PROBE_DATADOG_API_KEY }}
       TF_VAR_probe_request_headers: ${{ secrets.PROBE_REQUEST_HEADERS || '{}' }}
+      PLATFORM_INFRA_READ_TOKEN: ${{ secrets.PLATFORM_INFRA_READ_TOKEN }}
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
@@ -151,6 +160,13 @@ jobs:
           exit 1
 
       - uses: actions/checkout@v4
+
+      # Module sources in this private org (github.com/stabilestack/platform-infra//modules/...)
+      # are git fetches; the job's GITHUB_TOKEN can't read another private repo.
+      - name: git credentials for private module sources
+        if: env.PLATFORM_INFRA_READ_TOKEN != ''
+        run: git config --global url."https://x-access-token:${PLATFORM_INFRA_READ_TOKEN}@github.com/stabilestack/".insteadOf "https://github.com/stabilestack/"
+
       - uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: ${{ inputs.tofu-version }}
@@ -176,11 +192,19 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_ACCESS_KEY }}
       TF_VAR_probe_datadog_api_key: ${{ secrets.PROBE_DATADOG_API_KEY }}
       TF_VAR_probe_request_headers: ${{ secrets.PROBE_REQUEST_HEADERS || '{}' }}
+      PLATFORM_INFRA_READ_TOKEN: ${{ secrets.PLATFORM_INFRA_READ_TOKEN }}
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
       - uses: actions/checkout@v4
+
+      # Module sources in this private org (github.com/stabilestack/platform-infra//modules/...)
+      # are git fetches; the job's GITHUB_TOKEN can't read another private repo.
+      - name: git credentials for private module sources
+        if: env.PLATFORM_INFRA_READ_TOKEN != ''
+        run: git config --global url."https://x-access-token:${PLATFORM_INFRA_READ_TOKEN}@github.com/stabilestack/".insteadOf "https://github.com/stabilestack/"
+
       - uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: ${{ inputs.tofu-version }}
