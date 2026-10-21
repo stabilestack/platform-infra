@@ -48,7 +48,7 @@ new app's `.env.local` directly.
 ```
 modules/
   vercel/        Vercel project + domain + env scopes
-  datadog/       service, monitors, dashboards (IaC apply per SAL-548 pattern)
+  datadog/       service, monitors, dashboards (applied as IaC)
   sentry/        project + alert rules
   supabase/      project + pooler config
   stripe/        test-mode products/prices
