@@ -65,8 +65,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Module sources in this private org (github.com/stabilestack/platform-infra//modules/...)
-      # are git fetches; the job's GITHUB_TOKEN can't read another private repo.
+      # Module sources are git fetches. platform-infra is public; this only
+      # matters when a root module also pulls from a private stabilestack repo,
+      # which the job's GITHUB_TOKEN can't read.
       - name: git credentials for private module sources
         if: env.PLATFORM_INFRA_READ_TOKEN != ''
         run: git config --global url."https://x-access-token:${PLATFORM_INFRA_READ_TOKEN}@github.com/stabilestack/".insteadOf "https://github.com/stabilestack/"
@@ -163,8 +164,9 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      # Module sources in this private org (github.com/stabilestack/platform-infra//modules/...)
-      # are git fetches; the job's GITHUB_TOKEN can't read another private repo.
+      # Module sources are git fetches. platform-infra is public; this only
+      # matters when a root module also pulls from a private stabilestack repo,
+      # which the job's GITHUB_TOKEN can't read.
       - name: git credentials for private module sources
         if: env.PLATFORM_INFRA_READ_TOKEN != ''
         run: git config --global url."https://x-access-token:${PLATFORM_INFRA_READ_TOKEN}@github.com/stabilestack/".insteadOf "https://github.com/stabilestack/"
@@ -259,8 +261,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Module sources in this private org (github.com/stabilestack/platform-infra//modules/...)
-      # are git fetches; the job's GITHUB_TOKEN can't read another private repo.
+      # Module sources are git fetches. platform-infra is public; this only
+      # matters when a root module also pulls from a private stabilestack repo,
+      # which the job's GITHUB_TOKEN can't read.
       - name: git credentials for private module sources
         if: env.PLATFORM_INFRA_READ_TOKEN != ''
         run: git config --global url."https://x-access-token:${PLATFORM_INFRA_READ_TOKEN}@github.com/stabilestack/".insteadOf "https://github.com/stabilestack/"

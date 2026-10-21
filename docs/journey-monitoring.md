@@ -55,15 +55,14 @@ Every resource carries `lifecycle { prevent_destroy = true }`.
    Set `paths` to wherever the emitted tfvars lives, so a contract change
    triggers a plan.
 
-   platform-infra is private, so two things must be in place before an
-   app's CI can use it:
-   - **Workflow access.** In platform-infra, set *Settings → Actions →
-     General → Access* to "Accessible from repositories in the stabilestack
-     organization". Without it, the `uses:` line above fails.
-   - **Module access.** `tofu init` fetches the module sources over git, and
-     the job's own `GITHUB_TOKEN` can't read another private repo. Add
-     `PLATFORM_INFRA_READ_TOKEN` (below). The workflow turns it into a git
-     credential scoped to `github.com/stabilestack/`.
+   platform-infra is public, so the `uses:` line and the `tofu init` module
+   fetches need no extra access. Pin `uses:` and module `?ref=` to a release
+   tag or commit SHA, never a branch: `secrets: inherit` hands every key to
+   this workflow's code.
+
+   `PLATFORM_INFRA_READ_TOKEN` (below) is optional. Set it only when the root
+   module also pulls sources from a private `stabilestack` repo; the workflow
+   turns it into a git credential scoped to `github.com/stabilestack/`.
 
 ## Keys: plan reads, only apply writes
 
@@ -78,7 +77,7 @@ Configure the same secret names at two levels:
 | `TF_STATE_ACCESS_KEY_ID` / `TF_STATE_SECRET_ACCESS_KEY` | state bucket | state bucket |
 | `PROBE_DATADOG_API_KEY` | (only needed to plan the runner) | dedicated API key the runner submits metrics with |
 | `PROBE_REQUEST_HEADERS` | JSON `{ "<journey id>": { "<header>": "<value>" } }` | same |
-| `PLATFORM_INFRA_READ_TOKEN` | fine-grained token with Contents: Read on `stabilestack/platform-infra` | same |
+| `PLATFORM_INFRA_READ_TOKEN` | optional: fine-grained token with Contents: Read on any private `stabilestack` module repo | same |
 
 The apply job declares `environment: monitoring-apply`, and environment
 secrets override repo secrets of the same name. Restrict that environment to
