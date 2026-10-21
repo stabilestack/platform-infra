@@ -24,7 +24,7 @@ Every resource carries `lifecycle { prevent_destroy = true }`.
    `github.com/stabilestack/platform-infra//modules/slo?ref=<tag>`. Configure a
    remote backend there. State holds the probe runner's secrets, so the
    backend must be private and encrypted. Any S3-compatible bucket works,
-   including Cloudflare R2.
+   including Cloudflare R2 ([below](#state-on-cloudflare-r2)).
 3. **Caller workflow** in the app repo:
 
    ```yaml
@@ -90,6 +90,74 @@ The probe runner holds two secrets: the probe user's credentials
 (`PROBE_REQUEST_HEADERS`) and a Datadog **API** key, which can only submit
 data. It never holds an app key, a production database URL or a vendor
 admin token.
+
+## State on Cloudflare R2
+
+R2 is a supported backend through OpenTofu's `s3` backend:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket = "<app>-tofu-state"
+    key    = "monitoring/terraform.tfstate"
+    region = "auto"
+    endpoints = {
+      s3 = "https://<cloudflare account id>.r2.cloudflarestorage.com"
+    }
+
+    # R2 isn't AWS: skip the AWS-only checks.
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_metadata_api_check     = true
+    skip_s3_checksum            = true
+
+    use_path_style = true
+    use_lockfile   = true # lock object in the bucket; no DynamoDB
+  }
+}
+```
+
+Create an R2 API token with **Object Read & Write**, scoped to this one
+bucket only (not "all buckets", never Admin). Its Access Key ID and Secret
+Access Key go in `TF_STATE_ACCESS_KEY_ID` / `TF_STATE_SECRET_ACCESS_KEY`.
+
+R2 has no object versioning, so a bad state write can't be rolled back from
+the bucket. The apply job covers that with snapshots (next section).
+
+## State snapshots and restore
+
+Every apply pulls the state just before and just after `tofu apply` and
+uploads each as an Actions artifact on that run, kept 90 days:
+
+- `tofu-state-<run id>-<attempt>-<working dir>-pre`
+- `tofu-state-<run id>-<attempt>-<working dir>-post`
+
+On the first apply there is no state yet, so `pre` is an empty file. `post`
+is uploaded even when the apply fails, since a partial apply still writes
+state.
+
+**These artifacts contain secrets.** State holds the probe runner's
+`PROBE_REQUEST_HEADERS` and Datadog API key. They are uploaded only by the
+main-branch apply, never on `pull_request` runs. Anyone with read access to
+the app repo can download them, so the app repo must stay private; artifact
+access follows repo visibility and there is nothing else to configure.
+
+**Restore** (a human with state access, never CI):
+
+1. From the apply run that preceded the bad write, download the artifact you
+   want, usually that run's `post` (or the bad run's `pre`):
+   `gh run download <run id> -n <artifact name> -D /tmp/state-restore`
+2. With the state keys exported, in the root module:
+   ```sh
+   tofu init
+   tofu state push /tmp/state-restore/<pre|post>.tfstate
+   ```
+   `state push` refuses a snapshot with a different lineage or a lower
+   serial than the remote state, which a rollback always has. Add `-force`
+   only after checking the snapshot is the one you mean.
+3. Delete the local copy, then run the monitoring workflow by hand
+   (`workflow_dispatch` runs the drift plan) to confirm the plan is clean.
 
 ## Datadog SLO windows
 
