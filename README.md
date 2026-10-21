@@ -10,7 +10,9 @@ in managed mode (~4 min), with per-project state under `~/.platform-tfstate/<nam
 
 Six vendors have Terraform modules (all `tofu validate` + `tofu fmt` clean,
 OpenTofu 1.12.3); three provision via API instead (see
-[`docs/api-provisioning.md`](docs/api-provisioning.md)).
+[`docs/api-provisioning.md`](docs/api-provisioning.md)). Three more modules
+compile journey reliability contracts into monitoring, with plan-on-PR and
+apply-on-merge: see [`docs/journey-monitoring.md`](docs/journey-monitoring.md).
 
 | Vendor | Module | Provider |
 |---|---|---|
@@ -20,6 +22,9 @@ OpenTofu 1.12.3); three provision via API instead (see
 | GitHub | `modules/github` | `integrations/github ~> 6.0` |
 | Supabase | `modules/supabase` | `supabase/supabase ~> 1.0` |
 | PostHog | `modules/posthog` | `PostHog/posthog ~> 1.0` |
+| Journey SLOs + burn-rate alerts | `modules/slo` | `DataDog/datadog ~> 4.0` |
+| Journey probes (Workers cron runner + monitors) | `modules/probe` | `DataDog/datadog ~> 4.0`, `cloudflare/cloudflare ~> 5.0` |
+| Sentry issue-alert rules | `modules/sentry-alert` | `jianyuan/sentry ~> 0.15` |
 | Stripe | — (API) | unmaintained TF providers; use the Stripe API |
 | Resend | — (API) | no real TF provider |
 | Inngest | — (API) | no TF provider |

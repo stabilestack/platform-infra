@@ -21,16 +21,26 @@ jobs:
       - name: fmt check
         run: tofu fmt -check -recursive
 
-      # Validate every module that has a versions.tf.
-      - name: validate modules
+      # Validate every module and example that has a versions.tf, and run its
+      # `tofu test` suite when it has one. Tests plan against mocked providers:
+      # no credentials, no API calls.
+      - name: validate and test modules
         run: |
           set -euo pipefail
           found=0
-          for dir in $(find modules -name versions.tf -exec dirname {} \; | sort -u); do
+          for dir in $(find modules examples -name versions.tf -exec dirname {} \; | sort -u); do
             found=1
             echo "::group::validate $dir"
             tofu -chdir="$dir" init -backend=false -input=false
             tofu -chdir="$dir" validate
+            if [ -d "$dir/tests" ]; then tofu -chdir="$dir" test; fi
             echo "::endgroup::"
           done
           if [ "$found" = "0" ]; then echo "No modules to validate yet."; fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: probe runner test
+        run: node modules/probe/worker/probe-runner.test.mjs
