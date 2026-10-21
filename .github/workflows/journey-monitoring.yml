@@ -180,10 +180,15 @@ jobs:
       # state write, so keep the state from either side of every apply as a
       # run artifact. State holds the probe runner's secrets: these steps run
       # only on the main-branch apply, never on pull_request, and the files
-      # stay outside the checkout. Restore recipe: docs/journey-monitoring.md.
+      # stay outside the checkout. Artifacts are as readable as the repo, so a
+      # public caller gets no snapshots. Restore recipe: docs/journey-monitoring.md.
+      - name: refuse state artifacts on a public repo
+        if: github.event.repository.private != true
+        run: echo "::warning::repository is not private; skipping state snapshots, which contain secrets"
+
       - name: snapshot state (pre-apply)
         id: pre
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event.repository.private == true
         env:
           WORKDIR: ${{ inputs.working-directory }}
         run: |

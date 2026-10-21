@@ -133,22 +133,26 @@ uploads each as an Actions artifact on that run, kept 90 days:
 - `tofu-state-<run id>-<attempt>-<working dir>-pre`
 - `tofu-state-<run id>-<attempt>-<working dir>-post`
 
-On the first apply there is no state yet, so `pre` is an empty file. `post`
-is uploaded even when the apply fails, since a partial apply still writes
-state.
+On the first apply there is no state yet, so `pre` is an empty file; it
+can't be pushed back. `post` is uploaded even when the apply fails, since a
+partial apply still writes state. `retention-days` can't exceed the repo or
+org artifact retention setting, so set that to at least 90 days.
 
 **These artifacts contain secrets.** State holds the probe runner's
 `PROBE_REQUEST_HEADERS` and Datadog API key. They are uploaded only by the
 main-branch apply, never on `pull_request` runs. Anyone with read access to
 the app repo can download them, so the app repo must stay private; artifact
-access follows repo visibility and there is nothing else to configure.
+access follows repo visibility and there is nothing else to configure. On a
+public repo the workflow skips the snapshots with a warning.
 
 **Restore** (a human with state access, never CI):
 
-1. From the apply run that preceded the bad write, download the artifact you
+1. Stop applies until you're done: `gh workflow disable <monitoring workflow>`
+   in the app repo, so a merge can't race the push.
+2. From the apply run that preceded the bad write, download the artifact you
    want, usually that run's `post` (or the bad run's `pre`):
    `gh run download <run id> -n <artifact name> -D /tmp/state-restore`
-2. With the state keys exported, in the root module:
+3. With the state keys exported, in the root module:
    ```sh
    tofu init
    tofu state push /tmp/state-restore/<pre|post>.tfstate
@@ -156,7 +160,7 @@ access follows repo visibility and there is nothing else to configure.
    `state push` refuses a snapshot with a different lineage or a lower
    serial than the remote state, which a rollback always has. Add `-force`
    only after checking the snapshot is the one you mean.
-3. Delete the local copy, then run the monitoring workflow by hand
+4. Delete the local copy, `gh workflow enable` it again, then run it by hand
    (`workflow_dispatch` runs the drift plan) to confirm the plan is clean.
 
 ## Datadog SLO windows
