@@ -3,6 +3,8 @@
 #
 #   mode: plan   on pull_request. Plans and posts the plan as a sticky PR comment.
 #   mode: apply  on push to main. Applies. Refuses to run from any other ref.
+#                Uploads the state from before and after the apply as run
+#                artifacts (90 days); they contain secrets.
 #   mode: drift  nightly. Plans with no changes expected; a diff opens (or
 #                updates) a GitHub issue labelled monitoring-drift.
 #
@@ -173,7 +175,65 @@ jobs:
           tofu_wrapper: false
 
       - run: tofu init
-      - run: tofu apply -auto-approve
+
+      # State snapshots. R2 (and any unversioned bucket) can't roll back a bad
+      # state write, so keep the state from either side of every apply as a
+      # run artifact. State holds the probe runner's secrets: these steps run
+      # only on the main-branch apply, never on pull_request, and the files
+      # stay outside the checkout. Artifacts are as readable as the repo, so a
+      # public caller gets no snapshots. Restore recipe: docs/journey-monitoring.md.
+      - name: refuse state artifacts on a public repo
+        if: github.event.repository.private != true
+        run: echo "::warning::repository is not private; skipping state snapshots, which contain secrets"
+
+      - name: snapshot state (pre-apply)
+        id: pre
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event.repository.private == true
+        env:
+          WORKDIR: ${{ inputs.working-directory }}
+        run: |
+          umask 077
+          dir="$RUNNER_TEMP/tofu-state"
+          mkdir -p "$dir"
+          # First apply: no state yet, so the pull succeeds with empty output
+          # and the pre snapshot is an empty file. A failed pull stops the
+          # apply: never write state we couldn't snapshot first.
+          tofu state pull > "$dir/pre.tfstate"
+          slug=$(printf '%s' "$WORKDIR" | tr -c 'A-Za-z0-9._-' '-')
+          echo "name=tofu-state-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${slug}" >> "$GITHUB_OUTPUT"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+
+      - name: upload state (pre-apply)
+        if: steps.pre.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.pre.outputs.name }}-pre
+          path: ${{ steps.pre.outputs.dir }}/pre.tfstate
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: apply
+        id: apply
+        run: tofu apply -auto-approve
+
+      # Runs after a failed apply too: a partial apply can still write state.
+      - name: snapshot state (post-apply)
+        id: post
+        if: always() && steps.pre.outcome == 'success' && steps.apply.outcome != 'skipped'
+        env:
+          SNAPSHOT_DIR: ${{ steps.pre.outputs.dir }}
+        run: |
+          umask 077
+          tofu state pull > "$SNAPSHOT_DIR/post.tfstate"
+
+      - name: upload state (post-apply)
+        if: always() && steps.post.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.pre.outputs.name }}-post
+          path: ${{ steps.pre.outputs.dir }}/post.tfstate
+          retention-days: 90
+          if-no-files-found: error
 
   drift:
     if: inputs.mode == 'drift'
